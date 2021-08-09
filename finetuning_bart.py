@@ -96,11 +96,11 @@ def main():
     #     extension = args.train_file.split(".")[-1]
     #     raw_datasets = load_dataset(extension, data_files=data_files)
         
-    raw_datasets = load_dataset('/opt/notebooks/shahrukh/test-knowledge-graph1/test_bart/create_datasets.py', 
+    raw_datasets = load_dataset('create_datasets.py', 
                        data_files={"train": 
-                           '/opt/notebooks/shahrukh/test-knowledge-graph1/test_bart/data/input/wikisql_ann_train.json',
+                           'data/input/wikisql_ann_train.json',
                             "validation": 
-                           '/opt/notebooks/shahrukh/test-knowledge-graph1/test_bart/data/input/wikisql_ann_validation.json'})
+                           'data/input/wikisql_ann_validation.json'})
     # See more about loading any type of standard or custom dataset (from files, python dict, pandas DataFrame, etc) at
     # https://huggingface.co/docs/datasets/loading_datasets.html.
 
