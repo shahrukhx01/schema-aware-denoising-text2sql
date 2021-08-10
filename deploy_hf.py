@@ -1,3 +1,5 @@
+## !apt-get install git-lfs
+## git config --global user.email "sk28671@gmail.com"
 from transformers import (
     CONFIG_MAPPING,
     AdamW,
