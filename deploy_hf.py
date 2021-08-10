@@ -9,7 +9,7 @@ from transformers import (
     get_scheduler,
     set_seed,
 )
-shahrukhx01/schema-aware-distilbart-cnn-12-6-text2sql
+
 model = AutoModelForSeq2SeqLM.from_pretrained( "./output/model_2" )
 model.push_to_hub("schema-aware-distilbart-cnn-12-6-text2sql")
 
