@@ -348,17 +348,20 @@ def main():
 
         logger.info(result)
         torch.cuda.empty_cache()
-        
-        if args.output_dir is not None:
-            save_path = os.path.join(args.output_dir, f"model_{epoch}")
-            if not os.path.exists(save_path):
-                os.mkdir(save_path)
-            logger.info(f"Saving model at epoch {epoch}...")
-            accelerator.wait_for_everyone()
-            unwrapped_model = accelerator.unwrap_model(model)
-            unwrapped_model.save_pretrained(save_path, save_function=accelerator.save)
-            tokenizer.save_pretrained(save_path)
-
+        try:
+            if args.output_dir is not None:
+                save_path = os.path.join(args.output_dir, f"model_{epoch}")
+                if not os.path.exists(save_path):
+                    os.mkdir(save_path)
+                logger.info(f"Saving model at epoch {epoch}...")
+                accelerator.wait_for_everyone()
+                unwrapped_model = accelerator.unwrap_model(model)
+                unwrapped_model.save_pretrained(save_path, save_function=accelerator.save)
+                tokenizer.save_pretrained(save_path)
+                unwrapped_model.push_to_hub("schema-aware-distilbart-cnn-12-6-text2sql")
+                tokenizer.push_to_hub("schema-aware-distilbart-cnn-12-6-text2sql")
+        except:
+            logger.info(f"Error saving model.")
 
 if __name__ == "__main__":
     main()
