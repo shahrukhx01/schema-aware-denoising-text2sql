@@ -136,6 +136,7 @@ def main():
         logger.info("Training new model from scratch")
         model = AutoModelForSeq2SeqLM.from_config(config)
 
+    tokenizer.add_tokens([f"<col{col}>" for col in range(50)])
     model.resize_token_embeddings(len(tokenizer))
     if model.config.decoder_start_token_id is None:
         raise ValueError("Make sure that `config.decoder_start_token_id` is correctly defined")
