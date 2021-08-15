@@ -1,4 +1,0 @@
-  File "finetuning_bart.py", line 147
-    tokenizer.add_tokens([f"<col{col}>" for col in range(50)])
-                                      ^
-SyntaxError: invalid syntax
