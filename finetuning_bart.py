@@ -44,7 +44,7 @@ except (LookupError, OSError):
         nltk.download("punkt", quiet=True)
 
 summarization_name_mapping = {
-    "procurement_data": ("question", "answer"),
+    "wikisql_augmented_data": ("question", "answer"),
 }
 
 
@@ -123,6 +123,31 @@ def load_preprocess_dataset(args, tokenizer, prefix):
     train_dataset = processed_datasets["train"]
     eval_dataset = processed_datasets["validation"]
     return train_dataset, eval_dataset
+
+
+def get_data_loaders(args, tokenizer, model, train_dataset, eval_dataset, accelerator):
+    label_pad_token_id = (
+        -100 if args.ignore_pad_token_for_loss else tokenizer.pad_token_id
+    )
+    data_collator = DataCollatorForSeq2Seq(
+        tokenizer,
+        model=model,
+        label_pad_token_id=label_pad_token_id,
+        pad_to_multiple_of=8 if accelerator.use_fp16 else None,
+    )
+
+    train_dataloader = DataLoader(
+        train_dataset,
+        shuffle=True,
+        collate_fn=data_collator,
+        batch_size=args.per_device_train_batch_size,
+    )
+    eval_dataloader = DataLoader(
+        eval_dataset,
+        collate_fn=data_collator,
+        batch_size=args.per_device_eval_batch_size,
+    )
+    return train_dataloader, eval_dataloader
 
 
 def main():
@@ -222,20 +247,10 @@ def main():
         )
 
     prefix = args.source_prefix if args.source_prefix is not None else ""
-    train_dataset, eval_dataset = load_preprocess_dataset(args, tokenizer, prefix)
+
     # Log a few random samples from the training set:
     for index in random.sample(range(len(train_dataset)), 1):
         logger.info(f"Sample {index} of the training set: {train_dataset[index]}.")
-
-    label_pad_token_id = (
-        -100 if args.ignore_pad_token_for_loss else tokenizer.pad_token_id
-    )
-    data_collator = DataCollatorForSeq2Seq(
-        tokenizer,
-        model=model,
-        label_pad_token_id=label_pad_token_id,
-        pad_to_multiple_of=8 if accelerator.use_fp16 else None,
-    )
 
     def postprocess_text(preds, labels):
         preds = [pred.strip() for pred in preds]
@@ -246,18 +261,6 @@ def main():
         labels = ["\n".join(nltk.sent_tokenize(label)) for label in labels]
 
         return preds, labels
-
-    train_dataloader = DataLoader(
-        train_dataset,
-        shuffle=True,
-        collate_fn=data_collator,
-        batch_size=args.per_device_train_batch_size,
-    )
-    eval_dataloader = DataLoader(
-        eval_dataset,
-        collate_fn=data_collator,
-        batch_size=args.per_device_eval_batch_size,
-    )
 
     # Optimizer
     # Split weights in two groups, one with weight decay and the other not.
@@ -281,6 +284,11 @@ def main():
         },
     ]
     optimizer = AdamW(optimizer_grouped_parameters, lr=args.learning_rate)
+
+    train_dataset, eval_dataset = load_preprocess_dataset(args, tokenizer, prefix)
+    train_dataloader, eval_dataloader = get_data_loaders(
+        args, tokenizer, model, train_dataset, eval_dataset, accelerator
+    )
 
     # Prepare everything with our `accelerator`.
     model, optimizer, train_dataloader, eval_dataloader = accelerator.prepare(
@@ -338,6 +346,14 @@ def main():
         torch.cuda.empty_cache()
         logger.info(f"Starting epoch: {epoch}")
         logger.info(f"Starting training...")
+        train_dataset, eval_dataset = load_preprocess_dataset(args, tokenizer, prefix)
+        train_dataloader, eval_dataloader = get_data_loaders(
+            args, tokenizer, model, train_dataset, eval_dataset, accelerator
+        )
+        # Prepare everything with our `accelerator`.
+        model, optimizer, train_dataloader, eval_dataloader = accelerator.prepare(
+            model, optimizer, train_dataloader, eval_dataloader
+        )
         model.train()
         for step, batch in enumerate(train_dataloader):
             torch.cuda.empty_cache()
