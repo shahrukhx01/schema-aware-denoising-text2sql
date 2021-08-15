@@ -2,26 +2,29 @@ import json
 import datasets
 from random import randint
 from nlp import DatasetInfo, BuilderConfig, SplitGenerator, Split, utils
+import ast
+import random
+import re
 
 logger = datasets.logging.get_logger(__name__)
 
 
-class ProcurementConfig(datasets.BuilderConfig):
-    """BuilderConfig for Procurement."""
+class Text2SQLConfig(datasets.BuilderConfig):
+    """BuilderConfig for Text2SQL."""
 
     def __init__(self, **kwargs):
-        """BuilderConfig for Procurement.
+        """BuilderConfig for Text2SQL.
         Args:
           **kwargs: keyword arguments forwarded to super.
         """
-        super(ProcurementConfig, self).__init__(**kwargs)
+        super(Text2SQLConfig, self).__init__(**kwargs)
 
 
-class Procurement(datasets.GeneratorBasedBuilder):
-    """Procurement: Version 1.0.0"""
+class Text2SQL(datasets.GeneratorBasedBuilder):
+    """Text2SQL: Version 1.0.0"""
 
     BUILDER_CONFIGS = [
-        ProcurementConfig(
+        Text2SQLConfig(
             name="plain_text",
             version=datasets.Version("1.0.0", ""),
             description="Plain text",
@@ -30,7 +33,7 @@ class Procurement(datasets.GeneratorBasedBuilder):
 
     def _info(self):
         return datasets.DatasetInfo(
-            description="Procurement dataset",
+            description="Text2SQL dataset",
             features=datasets.Features(
                 {
                     "question": datasets.Value("string"),
@@ -47,17 +50,90 @@ class Procurement(datasets.GeneratorBasedBuilder):
     def _split_generators(self, dl_manager):
         downloaded_files = dl_manager.download_and_extract(self.config.data_files)
         return [
-            datasets.SplitGenerator(name=datasets.Split.TRAIN, gen_kwargs={"filepath": downloaded_files["train"]}),
-            datasets.SplitGenerator(name=datasets.Split.VALIDATION, gen_kwargs={"filepath": downloaded_files["validation"]}),
+            datasets.SplitGenerator(
+                name=datasets.Split.TRAIN,
+                gen_kwargs={"filepath": downloaded_files["train"]},
+            ),
+            datasets.SplitGenerator(
+                name=datasets.Split.VALIDATION,
+                gen_kwargs={"filepath": downloaded_files["validation"]},
+            ),
         ]
 
+    def _wikisql_example_erosion(self, example, dataset):
+        schema = ""
+        sql = example["sql"].replace("table", "` table `")
+        types = ast.literal_eval(example["header_types"])
+        conds = ast.literal_eval(example["conds"])
+        for condition in conds:
+            sql = sql.replace(condition, f"` {condition} `")
+
+        ## noising step 1: Repermute the schema
+        table_header = ast.literal_eval(example["header"])
+        header_types = list(zip(table_header, types))
+        random.shuffle(header_types)
+        table_header, types = zip(*header_types)
+        table_header, types = list(table_header), list(types)
+
+        ## noising step 2: Additional column to schema with probability = 0.3 from train set examples
+        p_add = random.random()
+        if p_add > 0.7:
+            additional_random_example = random.choice(dataset)
+            additional_random_example_header = ast.literal_eval(
+                additional_random_example["header"]
+            )
+            additional_column = random.choice(additional_random_example_header)
+            additional_column_index = additional_random_example_header.index(
+                additional_column
+            )
+            additional_column_type = ast.literal_eval(
+                additional_random_example["header_types"]
+            )[additional_column_index]
+
+            table_header.append(additional_column)
+            types.append(additional_column_type)
+
+        assert len(table_header) == len(types)
+        for index, value in enumerate(table_header):
+
+            col_name = value.strip().replace("'", "")
+            col_num = f"<col{index}>"
+            col_type = types[index].replace("'", "")
+            ## noising step 3: Dropping each column with probability = 0.1
+            p_drop = random.random()
+            if p_drop <= 0.9:
+                schema += f"{col_num} {col_name} : {col_type} "
+                sql = sql.replace(col_name, f"` {col_num} `")
+            else:
+                ## update corresponding sql for dropped column
+                sql = sql.replace(col_name, f"` <unk> `")
+
+        schema = schema.strip()
+        return f"{schema} </s> {example['question']}", sql
+
+    def _wikisql_example_shuffle(self, question, answer):
+        pass
 
     def _generate_examples(self, filepath):
         """This function returns the examples in the raw (text) form."""
         logger.info("generating examples from = %s", filepath)
         with open(filepath, encoding="utf-8") as f:
             data = json.load(f)
+            count = 0
             for article in data:
-                yield article["id"], {"question": article['question'],
-                                      "answer": article['answer']} 
-                
+                question, answer = self._wikisql_example_erosion(article, data)
+                print(answer, re.findall("`([^`]*)`", answer))
+                print()
+                print()
+                if "<unk>" in answer:
+                    count += 1
+            print(count)
+            """
+            yield article["id"], {
+                "question": article["question"],
+                "answer": article["answer"],
+            }"""
+
+
+if __name__ == "__main__":
+    pass
