@@ -1,6 +1,6 @@
 import json
 import datasets
-from random import randint
+from random import choice, randint
 from nlp import DatasetInfo, BuilderConfig, SplitGenerator, Split, utils
 import ast
 import random
@@ -109,10 +109,32 @@ class Text2SQL(datasets.GeneratorBasedBuilder):
                 sql = sql.replace(col_name, f"` <unk> `")
 
         schema = schema.strip()
-        return f"{schema} </s> {example['question']}", sql
+        return schema, example["question"], sql
 
     def _wikisql_example_shuffle(self, question, answer):
-        pass
+        target_type = "<2ql>"
+        query_entities = [
+            entity.strip().lower()
+            for entity in re.findall("`([^`]*)`", answer)
+            if entity != " table "
+        ]
+        shuffled_entities = [
+            entity.strip().lower()
+            for entity in re.findall("`([^`]*)`", answer)
+            if entity != " table "
+        ]
+        random.shuffle(shuffled_entities)
+        ## noising step 5: swap sql and NL question where sql becomes question and NL sentence becomes answer
+        p_swap = random.random()
+        if p_swap > 0.5:
+            question, answer = answer, question
+            target_type = "<2nl>"
+
+        noised_answer = answer.lower()
+        for entity, shuffled_entity in zip(query_entities, shuffled_entities):
+            noised_answer = noised_answer.replace(f"{entity}", f"{shuffled_entity}")
+        question = noised_answer
+        return target_type, question, answer
 
     def _generate_examples(self, filepath):
         """This function returns the examples in the raw (text) form."""
@@ -121,12 +143,19 @@ class Text2SQL(datasets.GeneratorBasedBuilder):
             data = json.load(f)
             count = 0
             for article in data:
-                question, answer = self._wikisql_example_erosion(article, data)
-                print(answer, re.findall("`([^`]*)`", answer))
+                target_type = "<2ql>"
+                schema, question, answer = self._wikisql_example_erosion(article, data)
+                ## noising step 4: Additional column to schema with probability = 0.3 from train set examples
+                p_shuffle = random.random()
+                if p_shuffle > 0.7:
+                    target_type, question, answer = self._wikisql_example_shuffle(
+                        question, answer
+                    )
+                question = f"{target_type} </s> {question} </s> {schema}"
+                print(question)
+                print(answer)
                 print()
                 print()
-                if "<unk>" in answer:
-                    count += 1
             print(count)
             """
             yield article["id"], {
