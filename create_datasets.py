@@ -5,6 +5,7 @@ from nlp import DatasetInfo, BuilderConfig, SplitGenerator, Split, utils
 import ast
 import random
 import re
+from tqdm import tqdm
 
 logger = datasets.logging.get_logger(__name__)
 
@@ -142,7 +143,7 @@ class Text2SQL(datasets.GeneratorBasedBuilder):
         with open(filepath, encoding="utf-8") as f:
             data = json.load(f)
             count = 0
-            for article in data:
+            for article in tqdm(data):
                 target_type = "<2ql>"
                 schema, question, answer = self._wikisql_example_erosion(article, data)
                 ## noising step 4: Additional column to schema with probability = 0.3 from train set examples
@@ -152,16 +153,8 @@ class Text2SQL(datasets.GeneratorBasedBuilder):
                         question, answer
                     )
                 question = f"{target_type} </s> {question} </s> {schema}"
-                print(question)
-                print(answer)
-                print()
-                print()
-            print(count)
-            """
-            yield article["id"], {
-                "question": article["question"],
-                "answer": article["answer"],
-            }"""
+
+                yield article["id"], {"question": question, "answer": answer}
 
 
 if __name__ == "__main__":

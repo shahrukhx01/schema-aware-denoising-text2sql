@@ -223,7 +223,7 @@ def main():
 
     prefix = args.source_prefix if args.source_prefix is not None else ""
     train_dataset, eval_dataset = load_preprocess_dataset(args, tokenizer, prefix)
-    """# Log a few random samples from the training set:
+    # Log a few random samples from the training set:
     for index in random.sample(range(len(train_dataset)), 1):
         logger.info(f"Sample {index} of the training set: {train_dataset[index]}.")
 
@@ -433,7 +433,7 @@ def main():
                 unwrapped_model.push_to_hub("schema-aware-distilbart-cnn-12-6-text2sql")
                 tokenizer.push_to_hub("schema-aware-distilbart-cnn-12-6-text2sql")
         except:
-            logger.info(f"Error saving model.")"""
+            logger.info(f"Error saving model.")
 
 
 if __name__ == "__main__":
