@@ -153,7 +153,6 @@ class Text2SQL(datasets.GeneratorBasedBuilder):
                         question, answer
                     )
                 question = f"{target_type} </s> {question} </s> {schema}"
-                print({"question": question, "answer": answer})
                 yield article["id"], {"question": question, "answer": answer}
 
 
