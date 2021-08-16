@@ -239,7 +239,7 @@ def main():
         logger.info("Training new model from scratch")
         model = AutoModelForSeq2SeqLM.from_config(config)
     additional_tokens = [f"<col{col}>" for col in range(50)] + ["<2nl>", "<2ql>"]
-    tokenizer.add_tokens()
+    tokenizer.add_tokens(additional_tokens)
     model.resize_token_embeddings(len(tokenizer))
     if model.config.decoder_start_token_id is None:
         raise ValueError(

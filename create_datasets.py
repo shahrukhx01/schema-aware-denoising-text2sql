@@ -127,7 +127,7 @@ class Text2SQL(datasets.GeneratorBasedBuilder):
         random.shuffle(shuffled_entities)
         ## noising step 5: swap sql and NL question where sql becomes question and NL sentence becomes answer
         p_swap = random.random()
-        if p_swap > 1.0: ## changed
+        if p_swap > 1.0:  ## changed
             question, answer = answer, question
             target_type = "<2nl>"
 
@@ -153,6 +153,8 @@ class Text2SQL(datasets.GeneratorBasedBuilder):
                         question, answer
                     )
                 question = f"{target_type} </s> {question} </s> {schema}"
+                if "<2nl>" in question:
+                    print(question)
                 yield article["id"], {"question": question, "answer": answer}
 
 
