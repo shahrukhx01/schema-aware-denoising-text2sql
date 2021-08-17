@@ -153,8 +153,6 @@ class Text2SQL(datasets.GeneratorBasedBuilder):
                         question, answer
                     )
                 question = f"{target_type} </s> {question} </s> {schema}"
-                if "<2nl>" in question:
-                    print(question)
                 yield article["id"], {"question": question, "answer": answer}
 
 
