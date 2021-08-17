@@ -63,6 +63,9 @@ class Procurement(datasets.GeneratorBasedBuilder):
         with open(filepath, encoding="utf-8") as f:
             data = json.load(f)
             for article in data:
+                schema, question = article["question"].split("</s>")
+                question = f"{question} </s> {schema}"
+                print(question, answer)
                 yield article["id"], {
                     "question": article["question"],
                     "answer": article["answer"],
