@@ -442,12 +442,12 @@ def main():
                 logger.info(f"Saving model at epoch {epoch}...")
                 accelerator.wait_for_everyone()
                 unwrapped_model = accelerator.unwrap_model(model)
-                unwrapped_model.save_pretrained(
+                """unwrapped_model.save_pretrained(
                     save_path, save_function=accelerator.save
                 )
-                tokenizer.save_pretrained(save_path)
-                unwrapped_model.push_to_hub("schema-aware-distilbart-cnn-12-6-text2sql")
-                tokenizer.push_to_hub("schema-aware-distilbart-cnn-12-6-text2sql")
+                tokenizer.save_pretrained(save_path)"""
+                unwrapped_model.push_to_hub("schema-aware-denoising-bart-large-cnn")
+                tokenizer.push_to_hub("schema-aware-denoising-bart-large-cnn")
         except:
             logger.info(f"Error saving model.")
 
