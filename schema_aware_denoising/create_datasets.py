@@ -127,7 +127,7 @@ class Text2SQL(datasets.GeneratorBasedBuilder):
         random.shuffle(shuffled_entities)
         ## noising step 5: swap sql and NL question where sql becomes question and NL sentence becomes answer
         p_swap = random.random()
-        if p_swap > 1.0:  ## changed from 0.5
+        if p_swap > 0.5:
             question, answer = answer, question
             target_type = "<2nl>"
 
@@ -147,11 +147,11 @@ class Text2SQL(datasets.GeneratorBasedBuilder):
                 target_type = "<2ql>"
                 schema, question, answer = self._wikisql_example_erosion(article, data)
                 ## noising step 4: Additional column to schema with probability = 0.3 from train set examples
-                p_shuffle = random.random()
+                """p_shuffle = random.random()
                 if p_shuffle > 0.7:
                     target_type, question, answer = self._wikisql_example_shuffle(
                         question, answer
-                    )
+                    )"""
                 question = f"{target_type} </s> {question} </s> {schema}"
                 yield article["id"], {"question": question, "answer": answer}
 
