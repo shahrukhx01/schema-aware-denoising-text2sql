@@ -341,19 +341,20 @@ def main():
     progress_bar = tqdm(
         range(args.max_train_steps), disable=not accelerator.is_local_main_process
     )
+    train_dataset, eval_dataset = load_preprocess_dataset(args, tokenizer, prefix)
+    train_dataloader, eval_dataloader = get_data_loaders(
+        args, tokenizer, model, train_dataset, eval_dataset, accelerator
+    )
+    # Prepare everything with our `accelerator`.
+    model, optimizer, train_dataloader, eval_dataloader = accelerator.prepare(
+        model, optimizer, train_dataloader, eval_dataloader
+    )
     completed_steps = 0
     for epoch in range(args.num_train_epochs):
         torch.cuda.empty_cache()
         logger.info(f"Starting epoch: {epoch}")
         logger.info(f"Starting training...")
-        train_dataset, eval_dataset = load_preprocess_dataset(args, tokenizer, prefix)
-        train_dataloader, eval_dataloader = get_data_loaders(
-            args, tokenizer, model, train_dataset, eval_dataset, accelerator
-        )
-        # Prepare everything with our `accelerator`.
-        model, optimizer, train_dataloader, eval_dataloader = accelerator.prepare(
-            model, optimizer, train_dataloader, eval_dataloader
-        )
+
         model.train()
         for step, batch in enumerate(train_dataloader):
             torch.cuda.empty_cache()
