@@ -449,7 +449,8 @@ def main():
                 tokenizer.save_pretrained(save_path)
                 unwrapped_model.push_to_hub("schema-aware-denoising-bart-large-cnn")
                 tokenizer.push_to_hub("schema-aware-denoising-bart-large-cnn")
-        except:
+        except Exception as e:
+            print(e)
             logger.info(f"Error saving model.")
 
 
