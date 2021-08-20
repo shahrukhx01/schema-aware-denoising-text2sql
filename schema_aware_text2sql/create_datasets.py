@@ -65,7 +65,7 @@ class Procurement(datasets.GeneratorBasedBuilder):
             for article in data:
                 schema, question = article["question"].split("</s>")
                 question = f"{question} </s> {schema}"
-                print(question, answer)
+                # print(question, answer)
                 yield article["id"], {
                     "question": article["question"],
                     "answer": article["answer"],
